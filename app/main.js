@@ -1,5 +1,6 @@
 var mapboxAccessToken = 'pk.eyJ1IjoibWpib3ZlZSIsImEiOiJjanMyZmEwd2cwMDB1NDRsN29wczE4MWJnIn0.z_32ibKt2idp3gdsLE4QDg'
 
+// make leaflet base map
 var map = L.map('map').setView([39, -105.547222], 7)
 
 L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
@@ -8,21 +9,26 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='
     id: 'mapbox.light'
 }).addTo(map)
 
+// overlay d3 svg onto leaflet base map
 var svg = d3.select(map.getPanes().overlayPane).append('svg')
 var g = svg.append('g').attr('class', 'leaflet-zoom-hide')
 
+// assign color to census block based on income - can change values as seen fit
 var color = d3.scaleLinear()
-    .domain([15000, 150000])
-    .range(['#d3c5ff', '#58508d'])
+    .domain([20000, 150000])
+    .range(['#efedf5', '#756bb1'])
 
+// load data to lay on top of basemap
 queue()
     .defer(d3.json, '../colorado-data/tracts.json')
     .defer(d3.csv, '../colorado-data/incomeData.csv')
+    .defer(d3.json, '../colorado-data/secData.json')
     .await(ready)
 
-function ready(error, tracts, income) {
+function ready(error, tracts, income, firms) {
     if (error) return console.log(error)
 
+    // apply income data from csv to census tract geojson
     var incomeByTractId = {}
 
     income.forEach(function(d) {
@@ -49,8 +55,12 @@ function ready(error, tracts, income) {
         .data(tracts.features)
         .enter().append('path')
 
-    map.on('moveend', reset)
+    var firmsFeature = g.selectAll('firms')
+        .data(firms.features)
+        .enter().append('path')
 
+    // draw layers
+    map.on('moveend', reset)
     reset()
 
     function reset() {
@@ -66,10 +76,18 @@ function ready(error, tracts, income) {
         g.attr("transform", "translate(" + -topLeft[0] + ","  + -topLeft[1] + ")")
 
         tractFeature.attr('d', path)
-            .style('fill-opacity', 0.75)
+            .style('fill-opacity', 0.65)
             .attr('fill', function(d) {
                 return d.income ? color(d.income) : '#eee'
             })
+            .attr('stroke-opacity', 0.85)
+            .attr('stroke-width', 0.5)
+            .attr('stroke', function(d) {
+                return d.income ? color(d.income) : 'none'
+            })
+
+        firmsFeature.attr('d', path)
+            .attr('fill', '#dd5182')
         
     }
 
