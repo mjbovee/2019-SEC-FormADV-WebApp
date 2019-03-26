@@ -12,7 +12,7 @@ var svg = d3.select(map.getPanes().overlayPane).append('svg')
 var g = svg.append('g').attr('class', 'leaflet-zoom-hide')
 
 var color = d3.scaleLinear()
-    .domain([15000, 100000])
+    .domain([15000, 150000])
     .range(['#d3c5ff', '#58508d'])
 
 queue()
@@ -30,7 +30,6 @@ function ready(error, tracts, income) {
     })
 
     tracts.features.forEach(function(d) {
-        console.log(d.properties)
         d.income = incomeByTractId[d.properties.GEOID]
     })
 
@@ -50,12 +49,12 @@ function ready(error, tracts, income) {
         .data(tracts.features)
         .enter().append('path')
 
-    map.on('viewreset', reset)
+    map.on('moveend', reset)
 
     reset()
 
     function reset() {
-        bounds = path.bounds(tracts)
+        var bounds = path.bounds(tracts)
         var topLeft = bounds[0]
         var bottomRight = bounds[1]
     
@@ -69,7 +68,7 @@ function ready(error, tracts, income) {
         tractFeature.attr('d', path)
             .style('fill-opacity', 0.75)
             .attr('fill', function(d) {
-                return d.income ? color(d.income) : 'none'
+                return d.income ? color(d.income) : '#eee'
             })
         
     }
