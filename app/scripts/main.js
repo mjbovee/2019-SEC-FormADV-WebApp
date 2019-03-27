@@ -16,7 +16,7 @@ var g = svg.append('g').attr('class', 'leaflet-zoom-hide')
 // assign color to census block based on income - can change values as seen fit
 var color = d3.scaleLinear()
     .domain([20000, 150000])
-    .range(['#efedf5', '#756bb1'])
+    .range(['#e6deff', '#58508d'])
 
 // load data to lay on top of basemap
 queue()
@@ -51,7 +51,7 @@ function ready(error, tracts, income, firms) {
 
     var path = d3.geoPath().projection(transform)
 
-    var tractFeature = g.selectAll('path')
+    var tractFeature = g.selectAll('tracts')
         .data(tracts.features)
         .enter().append('path')
 
@@ -72,10 +72,12 @@ function ready(error, tracts, income, firms) {
             .attr("height", bottomRight[1] - topLeft[1])
             .style("left", topLeft[0] + "px")
             .style("top", topLeft[1] + "px")
+            
 
         g.attr("transform", "translate(" + -topLeft[0] + ","  + -topLeft[1] + ")")
 
         tractFeature.attr('d', path)
+            .attr('class', 'tracts')
             .style('fill-opacity', 0.65)
             .attr('fill', function(d) {
                 return d.income ? color(d.income) : '#eee'
@@ -86,9 +88,15 @@ function ready(error, tracts, income, firms) {
                 return d.income ? color(d.income) : 'none'
             })
 
+
         firmsFeature.attr('d', path)
-            .attr('fill', '#dd5182')
-        
+            .attr('class', 'points')
+            .style('fill-opacity', 0.65)
+            .attr('fill', '#211e35')
+            .attr('stroke', '#211e35')
+            .attr('stroke-width', 0.25)
+            .attr('pointer-events', 'all')
+       
     }
 
     function projectPoint(x, y) {
@@ -97,3 +105,4 @@ function ready(error, tracts, income, firms) {
     }
     
 }
+
