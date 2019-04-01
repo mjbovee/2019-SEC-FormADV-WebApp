@@ -8,7 +8,7 @@ html, body {
     width: 100vw;
 }
 
-.title {
+/* .title {
     background-color: #ebebee;
     box-shadow: 1px 1px 5px black;
     width: 100vw;
@@ -37,8 +37,12 @@ html, body {
 
 .details{
     color:white;
+} */
+
+svg {
+    pointer-events: none;
 }
 
-.leaflet-overlay-pane svg path{
-    pointer-events: auto;
+.tracts {
+    pointer-events: all;
 }

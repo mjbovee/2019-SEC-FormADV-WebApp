@@ -54,10 +54,28 @@ function ready(error, tracts, income, firms) {
     var tractFeature = g.selectAll('tracts')
         .data(tracts.features)
         .enter().append('path')
+        .attr('class', 'tracts')
+        .style('fill-opacity', 0.65)
+        .attr('fill', function(d) {
+            return d.income ? color(d.income) : '#eee'
+        })
+        .attr('stroke-opacity', 0.85)
+        .attr('stroke-width', 0.5)
+        .attr('stroke', function(d) {
+            return d.income ? color(d.income) : 'none'
+        })
+
+    console.log(g)
+    d3.selectAll('g').on('click', function() {console.log('hi')})
 
     var firmsFeature = g.selectAll('firms')
         .data(firms.features)
         .enter().append('path')
+        .attr('class', 'points')
+        .style('fill-opacity', 0.65)
+        .attr('fill', '#211e35')
+        .attr('stroke', '#211e35')
+        .attr('stroke-width', 0.25)
 
     // draw layers
     map.on('moveend', reset)
@@ -77,25 +95,7 @@ function ready(error, tracts, income, firms) {
         g.attr("transform", "translate(" + -topLeft[0] + ","  + -topLeft[1] + ")")
 
         tractFeature.attr('d', path)
-            .attr('class', 'tracts')
-            .style('fill-opacity', 0.65)
-            .attr('fill', function(d) {
-                return d.income ? color(d.income) : '#eee'
-            })
-            .attr('stroke-opacity', 0.85)
-            .attr('stroke-width', 0.5)
-            .attr('stroke', function(d) {
-                return d.income ? color(d.income) : 'none'
-            })
-
-
         firmsFeature.attr('d', path)
-            .attr('class', 'points')
-            .style('fill-opacity', 0.65)
-            .attr('fill', '#211e35')
-            .attr('stroke', '#211e35')
-            .attr('stroke-width', 0.25)
-            .attr('pointer-events', 'all')
        
     }
 
