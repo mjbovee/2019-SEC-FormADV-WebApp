@@ -1,24 +1,63 @@
-var mapboxAccessToken = 'pk.eyJ1IjoibWpib3ZlZSIsImEiOiJjanMyZmEwd2cwMDB1NDRsN29wczE4MWJnIn0.z_32ibKt2idp3gdsLE4QDg'
+var width = document.querySelector('#map').offsetWidth
+var height = document.querySelector('#map').offsetHeight
 
-// make leaflet base map
-var map = L.map('map').setView([39, -105.547222], 7)
+d3.select(window).on('resize', resize)
+d3.select('#map').on('resize', resize)
 
-L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    maxZoom: 18,
-    id: 'mapbox.light'
-}).addTo(map)
-
-// overlay d3 svg onto leaflet base map
-var svg = d3.select(map.getPanes().overlayPane).append('svg')
-var g = svg.append('g').attr('class', 'leaflet-zoom-hide')
+var tip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(d) {
+        console.log(d)
+        return d.properties.MainOfficeCity + ' ' + d.geometry.coordinates
+    })
 
 // assign color to census block based on income - can change values as seen fit
 var color = d3.scaleLinear()
     .domain([20000, 150000])
     .range(['#e6deff', '#58508d'])
 
-// load data to lay on top of basemap
+var projection = d3.geoAlbersUsa()
+    .translate([width / 2, height / 2.25])
+    .scale(width)
+
+var path = d3.geoPath()
+    .projection(projection)
+
+var svg = d3.select('#map').append('svg')
+    .attr('width', width)
+    .attr('height', height )
+    .call(d3.zoom()
+        .scaleExtent([1, 40])
+        .extent([[0, 0], [width, height]])
+        .on('zoom', function() {
+            svg.attr('transform', d3.event.transform)
+        }))
+    .append('g')
+    .attr('class', 'map')
+
+function resize() {
+    width = parseInt(d3.select('#map').style('width'))
+    width = document.querySelector('#map').offsetWidth
+    height = document.querySelector('#map').offsetHeight
+
+    projection
+        .translate([width / 2, height / 2.25])
+        .scale(width)
+
+    d3.select('#map')
+        .attr('width', width)
+        .attr('height', height)
+
+    d3.select('svg')
+        .attr('width', width)
+        .attr('height', height)
+
+    d3.selectAll('path').attr('d', path)
+}
+
+svg.call(tip)
+
 queue()
     .defer(d3.json, '../colorado-data/tracts.json')
     .defer(d3.csv, '../colorado-data/incomeData.csv')
@@ -39,70 +78,53 @@ function ready(error, tracts, income, firms) {
         d.income = incomeByTractId[d.properties.GEOID]
     })
 
-    // make d3 and leaflet play together
-    function projectPoint(x, y) {
-        var point = map.latLngToLayerPoint(new L.LatLng(y, x))
-        this.stream.point(point.x, point.y)
-    }
-
-    var transform = d3.geoTransform({
-        point: projectPoint
-    })
-
-    var path = d3.geoPath().projection(transform)
-
-    var tractFeature = g.selectAll('tracts')
+    svg.append('g')
+        .attr('class', 'tracts')
+        .selectAll('path')
         .data(tracts.features)
         .enter().append('path')
-        .attr('class', 'tracts')
+        .attr('d', path)
         .style('fill-opacity', 0.65)
         .attr('fill', function(d) {
             return d.income ? color(d.income) : '#eee'
         })
         .attr('stroke-opacity', 0.85)
-        .attr('stroke-width', 0.5)
+        .attr('stroke-width', 0.05)
         .attr('stroke', function(d) {
             return d.income ? color(d.income) : 'none'
         })
 
-    console.log(g)
-    d3.selectAll('g').on('click', function() {console.log('hi')})
-
-    var firmsFeature = g.selectAll('firms')
+    svg.append('g')
+        .attr('class', 'points')
+        .selectAll('path')
         .data(firms.features)
         .enter().append('path')
-        .attr('class', 'points')
+        .attr('d', path)
         .style('fill-opacity', 0.65)
         .attr('fill', '#211e35')
         .attr('stroke', '#211e35')
         .attr('stroke-width', 0.25)
+        .attr('r', '3px')
 
-    // draw layers
-    map.on('moveend', reset)
-    reset()
-
-    function reset() {
-        var bounds = path.bounds(tracts)
-        var topLeft = bounds[0]
-        var bottomRight = bounds[1]
+                // tooltips
+                .style('stroke', '#eee')
+                .style('stroke-width', 0.25)
+                .on('mouseover', function(d) {
+                    tip.show(d)
     
-        svg.attr("width", bottomRight[0] - topLeft[0])
-            .attr("height", bottomRight[1] - topLeft[1])
-            .style("left", topLeft[0] + "px")
-            .style("top", topLeft[1] + "px")
-            
-
-        g.attr("transform", "translate(" + -topLeft[0] + ","  + -topLeft[1] + ")")
-
-        tractFeature.attr('d', path)
-        firmsFeature.attr('d', path)
-       
-    }
-
-    function projectPoint(x, y) {
-        var point = map.latLngToLayerPoint(new L.LatLng(y, x))
-        this.stream.point(point.x, point.y)
-    }
+                    d3.select(this)
+                        .style('opacity', 1)
+                        .style('stroke', '#eee')
+                        .style('stroke-width', 2)
+                })
+                .on('mouseout', function(d) {
+                    tip.hide(d)
     
+                    d3.select(this)
+                        .style('opacity', 0.7)
+                        .style('stroke', '#eee')
+                        .style('stroke-width', 0.25)
+                })
+             
 }
 
